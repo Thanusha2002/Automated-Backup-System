@@ -1,26 +1,26 @@
-🗂️ Automated Backup System
-📘 Overview
+Automated Backup System
+Overview
 
 The Automated Backup System is a Bash-based tool that automatically creates, verifies, and manages backups of important directories.
 It ensures that your data remains safe by compressing folders, verifying integrity through checksums, and maintaining a clean backup rotation policy.
 
 This project is designed for Linux/Mac (bash) and works well on Windows Git Bash too.
 
-⚙️ Features
+Features
 
-✅ Automated Backups – Creates .tar.gz backups of any directory you choose.
-✅ Checksum Verification – Verifies backup integrity using SHA-256 checksums.
-✅ Backup Rotation – Automatically deletes old backups according to configurable rules.
-✅ Configurable Exclusions – Skip unwanted folders like .git, node_modules, .cache, etc.
-✅ Dry Run Mode – Simulate a backup run without modifying anything.
-✅ Lock Protection – Prevents multiple concurrent backup runs.
-✅ Logging – Tracks every action with timestamps in backup.log.
-✅ Restore Function – Restore any backup to a directory of your choice.
-✅ List Command – Displays all available backups with sizes and dates.
-✅ Disk Space Check – Ensures enough free space before starting.
-✅ Email Simulation (optional) – Simulates success/failure notifications via a log file.
+Automated Backups – Creates .tar.gz backups of any directory you choose.
+Checksum Verification – Verifies backup integrity using SHA-256 checksums.
+Backup Rotation – Automatically deletes old backups according to configurable rules.
+Configurable Exclusions – Skip unwanted folders like .git, node_modules, .cache, etc.
+Dry Run Mode – Simulate a backup run without modifying anything.
+Lock Protection – Prevents multiple concurrent backup runs.
+Logging – Tracks every action with timestamps in backup.log.
+Restore Function – Restore any backup to a directory of your choice.
+List Command – Displays all available backups with sizes and dates.
+Disk Space Check – Ensures enough free space before starting.
+Email Simulation (optional) – Simulates success/failure notifications via a log file.
 
-🧰 Project Structure
+Project Structure
 backup-system/
 │
 ├── backup.sh              # Main backup automation script
@@ -42,7 +42,7 @@ backup-system/
     ├── data.log
     └── data.lo
 
-⚙️ Configuration File (backup.config)
+Configuration File (backup.config)
 
 The configuration file defines paths, exclusions, and retention settings.
 
@@ -74,21 +74,21 @@ EMAIL_SIM_FILE="./logs/last_email.txt"
 # Minimum free space (MB)
 MIN_FREE_MB=50
 
-🚀 How to Use
-🧩 1. Give Permission
+How to Use
+1. Give Permission
 
 Make the script executable:
 
 chmod +x backup.sh
 
-📦 2. Create a Backup
+2. Create a Backup
 
 Run:
 
 ./backup.sh test_data
 
 
-✅ Output:
+Output:
 
 [2025-11-09 12:00:10] INFO: Starting backup for ./test_data
 [2025-11-09 12:00:15] SUCCESS: Created backup ./backups/backup-2025-11-09-1200.tar.gz
@@ -97,11 +97,11 @@ Run:
 
 A backup .tar.gz and .sha256 file will appear in the backups/ folder.
 
-🧪 3. Dry Run (Simulation)
+3. Dry Run (Simulation)
 ./backup.sh --dry-run test_data
 
 
-✅ Output:
+Output:
 
 [INFO] DRY RUN: Would create archive: backup-2025-11-09-1200.tar.gz
 [INFO] DRY RUN: Would create checksum file
@@ -110,16 +110,16 @@ A backup .tar.gz and .sha256 file will appear in the backups/ folder.
 
 No files are actually created or deleted.
 
-🧾 4. List Available Backups
+4. List Available Backups
 ./backup.sh --list
 
 
-✅ Example Output:
+Example Output:
 
 -rw-r--r-- 1 user user 15K Nov 9 12:00 backup-2025-11-09-1200.tar.gz
 -rw-r--r-- 1 user user 120 Nov 9 12:00 backup-2025-11-09-1200.tar.gz.sha256
 
-🔁 5. Automatic Rotation (Cleanup)
+5. Automatic Rotation (Cleanup)
 
 The script automatically deletes old backups based on these rules:
 
@@ -129,37 +129,37 @@ Keep last 4 weekly backups
 
 Keep last 3 monthly backups
 
-✅ Log Example:
+Log Example:
 
 [2025-11-09 12:05:00] INFO: Deleting old backup: backups/backup-2025-10-29-1100.tar.gz
 
-♻️ 6. Restore a Backup
+6. Restore a Backup
 ./backup.sh --restore backup-2025-11-09-1200.tar.gz --to ./restored_files
 
 
-✅ Output:
+Output:
 
 [2025-11-09 12:10:15] SUCCESS: Restored backup to ./restored_files
 
-🛑 7. Lock File Protection
+7. Lock File Protection
 
 If another backup is already running:
 
 [2025-11-09 12:12:00] ERROR: Another backup is running. (Lock file exists)
 
-💽 8. Check Backup Integrity (Manual)
+8. Check Backup Integrity (Manual)
 
 You can verify a backup manually anytime:
 
 sha256sum -c backups/backup-2025-11-09-1200.tar.gz.sha256
 
 
-✅ Output:
+Output:
 
 backups/backup-2025-11-09-1200.tar.gz: OK
 
-🧠 How It Works
-🧩 Backup Creation
+How It Works
+Backup Creation
 
 Script reads settings from backup.config
 
@@ -171,7 +171,7 @@ Generates SHA256 checksum and verifies it
 
 Logs all events to backup.log
 
-🔁 Rotation Algorithm
+Rotation Algorithm
 
 Sorts all backups by creation date (newest → oldest)
 
@@ -187,7 +187,7 @@ Deletes anything older
 
 Removes matching .sha256 files
 
-🔐 Checksum Verification
+Checksum Verification
 
 After backup creation, script runs:
 
@@ -196,7 +196,7 @@ sha256sum -c backup.tar.gz.sha256
 
 If mismatch or missing file → logs error and marks backup as failed.
 
-⚙️ Lock Mechanism
+Lock Mechanism
 
 Creates /tmp/backup.lock when started.
 
@@ -204,7 +204,7 @@ If file exists → prevents duplicate run.
 
 Automatically removed when script exits or stops.
 
-🧩 Design Decisions
+Design Decisions
 Feature	Decision
 Checksum	Used SHA-256 (more secure and modern than MD5)
 Compression	.tar.gz chosen for cross-platform compatibility
@@ -213,7 +213,7 @@ Rotation policy	Greedy algorithm ensuring daily/weekly/monthly quotas
 Logging	Human-readable timestamp format
 Dry-run mode	Safe preview feature for users
 Lock file	Prevents race conditions when running from cron or manually
-🧪 Testing Performed
+Testing Performed
 Test Case	Command	Expected Result
 Create backup	./backup.sh test_data	Backup created successfully
 Verify checksum	sha256sum -c backup.tar.gz.sha256	OK
@@ -223,7 +223,7 @@ Restore backup	./backup.sh --restore backup.tar.gz --to restored/	Files restored
 Lock file test	Run twice	Second run blocked
 Rotation test	Run >7 backups	Old ones deleted
 Missing config	Rename config	Script prints error and exits
-🧩 Example Log Output
+Example Log Output
 [2025-11-09 12:00:10] INFO: Starting backup ./test_data
 [2025-11-09 12:00:15] SUCCESS: Created backup ./backups/backup-2025-11-09-1200.tar.gz
 [2025-11-09 12:00:15] INFO: Created checksum file ./backups/backup-2025-11-09-1200.tar.gz.sha256
@@ -231,7 +231,7 @@ Missing config	Rename config	Script prints error and exits
 [2025-11-09 12:00:16] INFO: Rotation complete
 [2025-11-09 12:00:17] INFO: Backup run completed successfully
 
-⚠️ Known Limitations
+Known Limitations
 
 The script is designed for local backups, not remote servers.
 
@@ -241,7 +241,7 @@ Email notifications are simulated (no actual SMTP integration).
 
 Date parsing for week/month rotation depends on system date command compatibility.
 
-🧩 Future Improvements
+Future Improvements
 
 Add real email/SMS notifications
 
@@ -251,24 +251,24 @@ Integrate remote backup (e.g., AWS S3 or SCP)
 
 Add progress bar for large backups
 
-👩‍💻 Author
+Author
 
 Thanusha2002
 DevOps Enthusiast | Automation Learner | GitHub Contributor
 
-🔗 GitHub: @Thanusha2002
+GitHub: @Thanusha2002
 
-🧾 License
+License
 
 This project is released under the MIT License.
 You can freely modify and share it with proper attribution.
 
-✅ Summary
+Summary
 
 Your Automated Backup System is now:
 
-Feature-complete 🟢
+Feature-complete 
 
-Verified & tested 🟢
+Verified & tested
 
 Professionally documented 🟢
