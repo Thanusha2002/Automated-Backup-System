@@ -1,282 +1,274 @@
-Automated Backup System
-A. Project Overview
+🗂️ Automated Backup System
+📘 Overview
 
-What the script does
+The Automated Backup System is a Bash-based tool that automatically creates, verifies, and manages backups of important directories.
+It ensures that your data remains safe by compressing folders, verifying integrity through checksums, and maintaining a clean backup rotation policy.
 
-backup.sh is a small Bash utility that:
+This project is designed for Linux/Mac (bash) and works well on Windows Git Bash too.
 
-.Creates compressed archives of a chosen source folder (tar.gz).
+⚙️ Features
 
-.Saves a SHA-256 checksum file for each archive.
+✅ Automated Backups – Creates .tar.gz backups of any directory you choose.
+✅ Checksum Verification – Verifies backup integrity using SHA-256 checksums.
+✅ Backup Rotation – Automatically deletes old backups according to configurable rules.
+✅ Configurable Exclusions – Skip unwanted folders like .git, node_modules, .cache, etc.
+✅ Dry Run Mode – Simulate a backup run without modifying anything.
+✅ Lock Protection – Prevents multiple concurrent backup runs.
+✅ Logging – Tracks every action with timestamps in backup.log.
+✅ Restore Function – Restore any backup to a directory of your choice.
+✅ List Command – Displays all available backups with sizes and dates.
+✅ Disk Space Check – Ensures enough free space before starting.
+✅ Email Simulation (optional) – Simulates success/failure notifications via a log file.
 
-.Can list available backups.
+🧰 Project Structure
+backup-system/
+│
+├── backup.sh              # Main backup automation script
+├── backup.config          # Configuration file for user-defined settings
+├── README.md              # Project documentation
+│
+├── logs/
+│   ├── backup.log         # Records all backup operations
+│   └── last_email.txt     # Simulated email notifications (optional)
+│
+├── backups/
+│   ├── backup-2025-11-09-1200.tar.gz
+│   ├── backup-2025-11-09-1200.tar.gz.sha256
+│   └── ...
+│
+└── test_data/
+    ├── documents/
+    ├── media/
+    ├── data.log
+    └── data.lo
 
-.Can restore (extract) a chosen backup into a target directory (safe default).
+⚙️ Configuration File (backup.config)
 
-.Performs a simple retention/rotation to keep only the newest N backups.
+The configuration file defines paths, exclusions, and retention settings.
 
-.Uses a PID lock to avoid running two backups at the same time.
+# backup.config
 
-.Writes messages to backup.log.
+# Folder to back up
+BACKUP_SOURCE="./test_data"
 
-Why this is useful
+# Destination folder for backups
+BACKUP_DESTINATION="./backups"
 
-.Keeps copies of important files in a compressed, verifiable format.
+# Skip these folders from backup
+EXCLUDE_PATTERNS=".git,node_modules,.cache"
 
-.Checksums protect against accidental corruption.
+# How many backups to keep
+DAILY_KEEP=7
+WEEKLY_KEEP=4
+MONTHLY_KEEP=3
 
-.Easy to restore files or full project state if something is deleted or broken.
+# Log file path
+LOG_FILE="./logs/backup.log"
 
-B. How to Use It
-Requirements
+# Prevent multiple runs
+LOCK_FILE="/tmp/backup.lock"
 
-.bash (4+ recommended)
+# Optional email simulation (writes to file)
+EMAIL_SIM_FILE="./logs/last_email.txt"
 
-.tar (gz support)
+# Minimum free space (MB)
+MIN_FREE_MB=50
 
-.sha256sum (or openssl as fallback)
+🚀 How to Use
+🧩 1. Give Permission
 
-.Git Bash / WSL or Linux environment recommended on Windows.
-
-Installation
-
-.Clone or copy repository to your machine:
-
-git clone <your-repo-url> backup-system
-cd backup-system
-
-
-.Make the script executable:
+Make the script executable:
 
 chmod +x backup.sh
 
-
-.Edit backup.config to match your environment (see configuration below).
-
-Configuration (backup.config)
-
-Example:
-
-SOURCE_DIR=./test_data
-BACKUP_DIR=./backups
-RETENTION_KEEP=3
-EXCLUDE_FILE=./backup.exclude
-
-Basic usage examples
-
-Create a new backup (default):
-
-./backup.sh
-
-
-List available backups:
-
-./backup.sh --list
-
-
-Restore a backup into ./restored:
-
-./backup.sh --restore backup-2025-11-06-2132.tar.gz --to ./restored
-
-
-Dry-run (show what would be done but do not create archive):
-
-./backup.sh --dry-run
-
-
-Show checksum verification:
-
-sha256sum -c backups/backup-2025-11-06-2132.tar.gz.sha256
-
-
-Restore a single file from the archive:
-
-tar -tzf backups/backup-2025-11-06-2132.tar.gz | grep path/you/want
-tar -xzf backups/backup-2025-11-06-2132.tar.gz -C ./restored path/inside/archive/file.txt
-
-C. How It Works
-Folder structure produced by the script
-backup-system/
-├── backups/
-│   ├── backup-2025-11-06-2132.tar.gz
-│   ├── backup-2025-11-06-2132.tar.gz.sha256
-│   ├── backup-2025-11-06-2226.tar.gz
-│   └── ...
-├── logs/
-│   └── backup.log
-├── test_data/
-│   └── ...  # files you backed up
-├── backup.config
-└── backup.sh
-
-How we create checksums
-
-After creating backup-YYYY-MM-DD-HHMM.tar.gz the script runs:
-
-sha256sum "$archive" > "$archive.sha256"
-
-
-This creates a file with the checksum and the archive filename. To verify:
-
-sha256sum -c "$archive.sha256"
-
-
-If sha256sum is not available, the script can fallback to openssl dgst -sha256 (compare output manually).
-
-Rotation algorithm (simple, robust)
-
-Algorithm used:
-
-Keep RETENTION_KEEP most recent backups (value from backup.config).
-
-Determine backups by filename timestamps (lexicographic sort works with YYYY-MM-DD-HHMM).
-
-Delete older backups and their .sha256 files.
-
-Rotation snippet (conceptual):
-
-# find archive files (sorted newest first) and delete older than RETENTION_KEEP
-backups=( $(ls -1t "$BACKUP_DIR"/backup-*.tar.gz 2>/dev/null) )
-if [ "${#backups[@]}" -gt "$RETENTION_KEEP" ]; then
-  to_delete=( "${backups[@]:$RETENTION_KEEP}" )
-  for f in "${to_delete[@]}"; do
-    rm -f "$f" "$f.sha256"
-  done
-fi
-
-
-ls -1t sorts by modification time (newest first). Using the timestamp in the filename also works and is consistent.
-
-D. Design Decisions
-
-Why this approach
-
-tar.gz chosen for wide compatibility and simplicity.
-
-sha256sum chosen because SHA-256 is a strong, broadly available checksum tool.
-
-PID lock prevents multiple simultaneous backups which could corrupt archives or exhaust disk I/O.
-
-Extracting into a restored directory by default to avoid accidental overwrite.
-
-Challenges & solutions
-
-Windows path differences — solution: recommend Git Bash or WSL.
-
-Missing tools (sha256sum) — fallback to openssl.
-
-Atomic operations — create the archive with a temporary name then rename into backups/ when complete.
-
-E. Testing
-Test folder creation
-
-Create a test_data folder and add sample files:
-
-mkdir -p test_data
-echo "first file" > test_data/file1.txt
-echo "second file" > test_data/file2.txt
-mkdir -p test_data/documents
-echo "doc" > test_data/documents/doc1.txt
-
-Example: Creating a backup
+📦 2. Create a Backup
 
 Run:
 
-./backup.sh
+./backup.sh test_data
 
 
-Expected log lines (similar to screenshot):
+✅ Output:
 
-[2025-11-06 21:31:30] DRY RUN: Would create tarball /c/Users/lenovo/backups/backup-2025-11-06-2131.tar.gz
-[2025-11-06 21:32:23] INFO: Creating backup backup-2025-11-06-2132.tar.gz
-[2025-11-06 21:32:23] SUCCESS: Created backup /c/Users/lenovo/backups/backup-2025-11-06-2132.tar.gz
-[2025-11-06 21:32:23] INFO: Created checksum file /c/Users/lenovo/backups/backup-2025-11-06-2132.tar.gz.sha256
-[2025-11-06 21:32:23] SUCCESS: Checksum verified
-
-Creating multiple backups over several "days" (fake dates)
-
-Simplest: create backups with different timestamped names by passing an override environment variable or by running the script and creating archives with chosen filenames. Example (manual approach):
-
-# safe manual method: create archives with chosen timestamps
-cp -r test_data test_data_snapshot
-tar -czf backups/backup-2025-11-01-1200.tar.gz test_data_snapshot
-sha256sum backups/backup-2025-11-01-1200.tar.gz > backups/backup-2025-11-01-1200.tar.gz.sha256
-
-# make a second fake-day backup
-tar -czf backups/backup-2025-11-02-1200.tar.gz test_data_snapshot
-sha256sum backups/backup-2025-11-02-1200.tar.gz > backups/backup-2025-11-02-1200.tar.gz.sha256
+[2025-11-09 12:00:10] INFO: Starting backup for ./test_data
+[2025-11-09 12:00:15] SUCCESS: Created backup ./backups/backup-2025-11-09-1200.tar.gz
+[2025-11-09 12:00:15] SUCCESS: Checksum verified
 
 
-Alternatively, add an environment variable in the script to override timestamp:
+A backup .tar.gz and .sha256 file will appear in the backups/ folder.
 
-TS=${TS_OVERRIDE:-$(date +"%Y-%m-%d-%H%M")}
-archive="backup-${TS}.tar.gz"
-
-
-Then call:
-
-TS_OVERRIDE=2025-11-01-1200 ./backup.sh
-TS_OVERRIDE=2025-11-02-1200 ./backup.sh
-
-Automatic deletion of old backups
-
-With RETENTION_KEEP=3, create 4+ backups and run script — older ones should be removed. Example log lines:
-
-[2025-11-08 10:00:00] INFO: Rotation: keeping 3 newest backups
-[2025-11-08 10:00:00] INFO: Deleted old backup backup-2025-10-30-0900.tar.gz
-
-Restoring from a backup
-
-Extract into ./restored:
-
-./backup.sh --restore backup-2025-11-06-2132.tar.gz --to ./restored
-# then inspect restored/
-ls -la restored
-
-Dry run mode
-
-If --dry-run is implemented:
-
-./backup.sh --dry-run
-# Output example:
-[2025-11-06 21:31:30] DRY RUN: Would create tarball /c/Users/lenovo/backups/backup-2025-11-06-2131.tar.gz
-
-Error handling example
-
-Try backing up a non-existent folder:
-
-SOURCE_DIR=./no_such_folder ./backup.sh
+🧪 3. Dry Run (Simulation)
+./backup.sh --dry-run test_data
 
 
-Expected behavior:
+✅ Output:
 
-.Script prints a helpful error:
+[INFO] DRY RUN: Would create archive: backup-2025-11-09-1200.tar.gz
+[INFO] DRY RUN: Would create checksum file
+[INFO] DRY RUN: Would run rotation policy
 
-[2025-11-06 21:40:00] ERROR: Source directory not found: ./no_such_folder
+
+No files are actually created or deleted.
+
+🧾 4. List Available Backups
+./backup.sh --list
 
 
-.Exits non-zero without creating files.
+✅ Example Output:
 
-F. Known Limitations
+-rw-r--r-- 1 user user 15K Nov 9 12:00 backup-2025-11-09-1200.tar.gz
+-rw-r--r-- 1 user user 120 Nov 9 12:00 backup-2025-11-09-1200.tar.gz.sha256
 
-.Permissions/ownership on Windows: Unix permissions may not be preserved on NTFS / Git Bash.
+🔁 5. Automatic Rotation (Cleanup)
 
-.No encryption: backups are stored as plain tar.gz (you can add gpg encryption later).
+The script automatically deletes old backups based on these rules:
 
-.Rotation is a simple “keep N newest” algorithm — no daily/weekly/monthly buckets.
+Keep last 7 daily backups
 
-.No remote copy / cloud sync included — only local backups.
+Keep last 4 weekly backups
 
-.Large backups could take time; no parallel chunking/rsync delta support.
+Keep last 3 monthly backups
 
-Extra ideas (future improvements)
+✅ Log Example:
 
-1.Add gpg encryption option.
+[2025-11-09 12:05:00] INFO: Deleting old backup: backups/backup-2025-10-29-1100.tar.gz
 
-2.Add remote sync (rsync / rclone).
+♻️ 6. Restore a Backup
+./backup.sh --restore backup-2025-11-09-1200.tar.gz --to ./restored_files
 
-3.Improve rotation to support monthly/weekly/daily retention buckets.
 
-4.Add email alert on failure.
+✅ Output:
 
-5.Add incremental backups using tar --listed-incremental or rsync.
+[2025-11-09 12:10:15] SUCCESS: Restored backup to ./restored_files
+
+🛑 7. Lock File Protection
+
+If another backup is already running:
+
+[2025-11-09 12:12:00] ERROR: Another backup is running. (Lock file exists)
+
+💽 8. Check Backup Integrity (Manual)
+
+You can verify a backup manually anytime:
+
+sha256sum -c backups/backup-2025-11-09-1200.tar.gz.sha256
+
+
+✅ Output:
+
+backups/backup-2025-11-09-1200.tar.gz: OK
+
+🧠 How It Works
+🧩 Backup Creation
+
+Script reads settings from backup.config
+
+Uses tar -czf to compress target directory
+
+Skips excluded folders
+
+Generates SHA256 checksum and verifies it
+
+Logs all events to backup.log
+
+🔁 Rotation Algorithm
+
+Sorts all backups by creation date (newest → oldest)
+
+Keeps:
+
+Last 7 distinct days
+
+Last 4 distinct weeks
+
+Last 3 distinct months
+
+Deletes anything older
+
+Removes matching .sha256 files
+
+🔐 Checksum Verification
+
+After backup creation, script runs:
+
+sha256sum -c backup.tar.gz.sha256
+
+
+If mismatch or missing file → logs error and marks backup as failed.
+
+⚙️ Lock Mechanism
+
+Creates /tmp/backup.lock when started.
+
+If file exists → prevents duplicate run.
+
+Automatically removed when script exits or stops.
+
+🧩 Design Decisions
+Feature	Decision
+Checksum	Used SHA-256 (more secure and modern than MD5)
+Compression	.tar.gz chosen for cross-platform compatibility
+Config file	Allows full customization without editing script
+Rotation policy	Greedy algorithm ensuring daily/weekly/monthly quotas
+Logging	Human-readable timestamp format
+Dry-run mode	Safe preview feature for users
+Lock file	Prevents race conditions when running from cron or manually
+🧪 Testing Performed
+Test Case	Command	Expected Result
+Create backup	./backup.sh test_data	Backup created successfully
+Verify checksum	sha256sum -c backup.tar.gz.sha256	OK
+Dry run	./backup.sh --dry-run test_data	Only logs actions
+List backups	./backup.sh --list	Shows available backups
+Restore backup	./backup.sh --restore backup.tar.gz --to restored/	Files restored
+Lock file test	Run twice	Second run blocked
+Rotation test	Run >7 backups	Old ones deleted
+Missing config	Rename config	Script prints error and exits
+🧩 Example Log Output
+[2025-11-09 12:00:10] INFO: Starting backup ./test_data
+[2025-11-09 12:00:15] SUCCESS: Created backup ./backups/backup-2025-11-09-1200.tar.gz
+[2025-11-09 12:00:15] INFO: Created checksum file ./backups/backup-2025-11-09-1200.tar.gz.sha256
+[2025-11-09 12:00:15] SUCCESS: Checksum verified
+[2025-11-09 12:00:16] INFO: Rotation complete
+[2025-11-09 12:00:17] INFO: Backup run completed successfully
+
+⚠️ Known Limitations
+
+The script is designed for local backups, not remote servers.
+
+Incremental backups (only changed files) are not yet implemented.
+
+Email notifications are simulated (no actual SMTP integration).
+
+Date parsing for week/month rotation depends on system date command compatibility.
+
+🧩 Future Improvements
+
+Add real email/SMS notifications
+
+Add incremental and differential backup modes
+
+Integrate remote backup (e.g., AWS S3 or SCP)
+
+Add progress bar for large backups
+
+👩‍💻 Author
+
+Thanusha2002
+DevOps Enthusiast | Automation Learner | GitHub Contributor
+
+🔗 GitHub: @Thanusha2002
+
+🧾 License
+
+This project is released under the MIT License.
+You can freely modify and share it with proper attribution.
+
+✅ Summary
+
+Your Automated Backup System is now:
+
+Feature-complete 🟢
+
+Verified & tested 🟢
+
+Professionally documented 🟢
